@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conferência de Estoque</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #f6f7f9; color: #1d2330; }
+    main { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .sub { color: #5b6475; margin-top: 0; }
+    .campos { display: grid; gap: 12px; background: #fff; padding: 16px; border-radius: 8px; }
+    label { display: grid; gap: 4px; font-weight: 600; font-size: .9rem; }
+    .botoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+    button { padding: 8px 14px; border: 0; border-radius: 6px; background: #c8102e; color: #fff; cursor: pointer; font-size: .95rem; }
+    button.secundario { background: #e3e6eb; color: #1d2330; }
+    .status { padding: 8px 12px; background: #e8f3ec; border-radius: 6px; word-break: break-word; }
+    .status:empty { display: none; }
+    .status.erro { background: #fdecec; }
+    table { width: 100%; border-collapse: collapse; background: #fff; font-size: .9rem; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e6eb; }
+    section { overflow-x: auto; margin-top: 16px; }
+    h2 { font-size: 1.05rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Conferência de Estoque</h1>
+    <p class="sub">Mercadinho fictício · sistema de vendas × armazém · dados inventados</p>
+
+    <div class="campos">
+      <label>Estoque no sistema (CSV)
+        <input type="file" id="csv-sistema" accept=".csv">
+      </label>
+      <label>Estoque no armazém (CSV)
+        <input type="file" id="csv-armazem" accept=".csv">
+      </label>
+      <label>Vendas dos últimos 30 dias (CSV)
+        <input type="file" id="csv-vendas" accept=".csv">
+      </label>
+    </div>
+
+    <div class="botoes">
+      <button id="btn-comparar">Comparar</button>
+      <button id="btn-exemplos" class="secundario">Usar arquivos de exemplo</button>
+      <button id="btn-api" class="secundario">Testar API</button>
+    </div>
+
+    <p id="status" class="status"></p>
+    <div id="resultado"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

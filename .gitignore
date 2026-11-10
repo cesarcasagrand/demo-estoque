@@ -1,0 +1,10 @@
+# Segredos: nunca vão para o Git
+.env
+.env.*
+!.env.example
+
+# Dependências
+node_modules/
+
+# Pasta local criada pelo "vercel dev" / "vercel link"
+.vercel/
