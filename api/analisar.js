@@ -23,12 +23,12 @@ const ESPERA_503_MS = 2000;
 const MAX_ITENS = 200;
 
 // Tempo: o plano gratuito da Vercel permite até 300 s com Fluid compute (padrão
-// em projetos novos, docs conferidas em 10/11/2026). O pior caso aqui é
-// 3 chamadas x 18 s + 2 s de espera = 56 s, dentro do maxDuration de 60 s
-// declarado abaixo; isso cabe mesmo se o projeto ficar sem Fluid compute.
-// Se a função passar do limite, a Vercel a encerra com 504.
-const TEMPO_LIMITE_MS = 18000;
-export const config = { maxDuration: 60 };
+// em projetos novos, docs conferidas em 10/11/2026). Com 18 s por chamada o
+// Gemini chegou a estourar o tempo em horário de pico, por isso 30 s.
+// Pior caso: 3 chamadas x 30 s + 2 s de espera = 92 s, dentro do maxDuration
+// de 100 s declarado abaixo. Se a função passar do limite, a Vercel a encerra com 504.
+const TEMPO_LIMITE_MS = 30000;
+export const config = { maxDuration: 100 };
 
 const INSTRUCOES = `Você explica relatórios de estoque para o dono de um mercadinho, em português simples, sem termos técnicos.
 
@@ -51,7 +51,10 @@ Regras obrigatórias:
    Divergências
    O que vai acabar
    Quanto pedir
-5. Seja breve: no máximo duas frases por produto.`;
+5. Seja breve: no máximo duas frases por produto.
+6. Escreva números decimais com vírgula, como no Brasil: 3,6 e não 3.6.
+7. Nunca escreva número negativo. Para a diferença, use o valor sem o sinal e diga de que lado sobra: diferenca -7 vira "7 unidades a mais no armazém"; diferenca 8 vira "8 unidades a mais no sistema".
+8. Um parágrafo por produto, com uma linha em branco entre um produto e outro.`;
 
 // Copia só os campos esperados, para não repassar à IA nada além dos dados da comparação.
 function limparDados(corpo) {
