@@ -21,7 +21,14 @@ const MODELO = 'gemini-3.1-flash-lite';
 const MODELO_RESERVA = 'gemini-3.5-flash-lite';
 const ESPERA_503_MS = 2000;
 const MAX_ITENS = 200;
-const TEMPO_LIMITE_MS = 25000;
+
+// Tempo: o plano gratuito da Vercel permite até 300 s com Fluid compute (padrão
+// em projetos novos, docs conferidas em 10/11/2026). O pior caso aqui é
+// 3 chamadas x 18 s + 2 s de espera = 56 s, dentro do maxDuration de 60 s
+// declarado abaixo; isso cabe mesmo se o projeto ficar sem Fluid compute.
+// Se a função passar do limite, a Vercel a encerra com 504.
+const TEMPO_LIMITE_MS = 18000;
+export const config = { maxDuration: 60 };
 
 const INSTRUCOES = `Você explica relatórios de estoque para o dono de um mercadinho, em português simples, sem termos técnicos.
 
@@ -34,7 +41,7 @@ Os dados vêm de um programa que já fez todas as contas:
 
 Regras obrigatórias:
 1. Use somente os números que estão nos dados. Não calcule, não estime e não invente nenhum número novo.
-2. A causa de cada divergência você não sabe: apresente como possibilidade ("pode ser..."). Escolha a causa pela direção da diferença e nunca use uma causa da outra direção:
+2. A causa de cada divergência você não sabe. Para cada produto, escolha só as 1 ou 2 causas mais prováveis para aquele caso, da lista da direção certa abaixo; não repita a lista inteira e não use causa de outra direção. Fale sempre como possibilidade ("pode ser", "pode ter acontecido"), inclusive nos produtos que só aparecem em um lado. Nunca afirme a causa e nunca use "provavelmente", "certamente" ou "com certeza".
    - diferenca positiva (sistema mostra MAIS que o armazém): venda feita sem registro no sistema, perda ou quebra, furto, entrada lançada no sistema sem a mercadoria ter chegado, ou erro na contagem do armazém.
    - diferenca negativa (armazém tem MAIS que o sistema): mercadoria que chegou sem a entrada ser lançada no sistema, venda lançada em dobro ou cancelada sem estorno, devolução de cliente não registrada, ou erro na contagem do armazém.
    - so_no_armazem: produto que chegou mas nunca foi cadastrado no sistema.

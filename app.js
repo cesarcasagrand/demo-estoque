@@ -151,6 +151,24 @@ function mostrarStatus(texto, erro = false) {
   areaStatus.className = erro ? 'status erro' : 'status';
 }
 
+// A tela fala com o dono do mercadinho: cabeçalhos, situação e números em
+// português. Os nomes internos (sku, tipo...) continuam iguais no resultado
+// que vai para a API.
+const SITUACAO = {
+  sistema_maior: 'Sistema mostra mais',
+  armazem_maior: 'Armazém tem mais',
+  so_no_armazem: 'Só no armazém',
+  so_no_sistema: 'Só no sistema',
+};
+
+function formatarValor(valor, campo) {
+  if (valor === null || valor === undefined) return '—';
+  if (campo === 'tipo') return SITUACAO[valor] || valor;
+  if (typeof valor === 'number') return valor.toLocaleString('pt-BR'); // 3.6 -> "3,6"
+  return valor;
+}
+
+// colunas: lista de [campo no resultado, título na tela]
 function criarTabela(titulo, linhas, colunas) {
   const secao = document.createElement('section');
   const h2 = document.createElement('h2');
@@ -159,18 +177,18 @@ function criarTabela(titulo, linhas, colunas) {
 
   const tabela = document.createElement('table');
   const cabecalho = document.createElement('tr');
-  colunas.forEach((c) => {
+  colunas.forEach(([, rotulo]) => {
     const th = document.createElement('th');
-    th.textContent = c;
+    th.textContent = rotulo;
     cabecalho.appendChild(th);
   });
   tabela.appendChild(cabecalho);
 
   linhas.forEach((linha) => {
     const tr = document.createElement('tr');
-    colunas.forEach((c) => {
+    colunas.forEach(([campo]) => {
       const td = document.createElement('td');
-      td.textContent = linha[c] ?? '—';
+      td.textContent = formatarValor(linha[campo], campo);
       tr.appendChild(td);
     });
     tabela.appendChild(tr);
@@ -183,12 +201,17 @@ function criarTabela(titulo, linhas, colunas) {
 function mostrarResultado(resultado) {
   areaResultado.innerHTML = '';
   areaResultado.appendChild(
-    criarTabela('Divergências', resultado.divergencias || [],
-      ['sku', 'produto', 'sistema', 'armazem', 'diferenca', 'tipo'])
+    criarTabela('Divergências', resultado.divergencias || [], [
+      ['sku', 'Código'], ['produto', 'Produto'], ['sistema', 'No sistema'],
+      ['armazem', 'No armazém'], ['diferenca', 'Diferença'], ['tipo', 'Situação'],
+    ])
   );
   areaResultado.appendChild(
-    criarTabela('Vai acabar em menos de 7 dias', resultado.vaiAcabar || [],
-      ['sku', 'produto', 'estoqueArmazem', 'mediaDiaria', 'diasRestantes', 'pedirPara14Dias'])
+    criarTabela('Vai acabar em menos de 7 dias', resultado.vaiAcabar || [], [
+      ['sku', 'Código'], ['produto', 'Produto'], ['estoqueArmazem', 'No armazém'],
+      ['mediaDiaria', 'Vende por dia'], ['diasRestantes', 'Dias até acabar'],
+      ['pedirPara14Dias', 'Pedir (14 dias)'],
+    ])
   );
 }
 
