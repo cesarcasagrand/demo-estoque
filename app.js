@@ -40,11 +40,16 @@ function lerCSV(texto) {
 //   se ninguém achou o produto, não dá para vender.
 // - SKU sem venda nos 30 dias fica fora de vaiAcabar (não há ritmo para projetar).
 // - O corte de 7 dias usa o valor sem arredondar; o arredondamento é só para exibir.
+// - pedirPara14Dias = o que falta para o armazém cobrir 14 dias no ritmo atual,
+//   arredondado para cima (não dá para pedir meia unidade, e faltar é pior que sobrar).
+//   A conta usa o total vendido (vendidos * 14 / 30) para evitar erro de casa decimal.
+//   Todas as contas ficam aqui; a IA só explica, não calcula.
 // - Lookup por SKU em objeto ({ "MRC-001": 40 }) em vez de procurar na lista
 //   a cada produto: cada busca é direta, não percorre tudo de novo.
 function compararEstoques(sistema, armazem, vendas) {
   const LIMITE_DIAS = 7;
   const DIAS_DE_VENDA = 30;
+  const DIAS_DE_COBERTURA = 14;
 
   const qtdSistema = {};
   const qtdArmazem = {};
@@ -100,17 +105,24 @@ function compararEstoques(sistema, armazem, vendas) {
   const vaiAcabar = [];
   for (let i = 0; i < vendas.length; i++) {
     const item = vendas[i];
-    const mediaDiaria = Number(item.vendidos_30d) / DIAS_DE_VENDA;
+    const vendidos = Number(item.vendidos_30d);
+    const mediaDiaria = vendidos / DIAS_DE_VENDA;
     if (mediaDiaria > 0) {
       const estoque = qtdArmazem[item.sku] === undefined ? 0 : qtdArmazem[item.sku];
       const dias = estoque / mediaDiaria;
       if (dias < LIMITE_DIAS) {
+        const necessario = (vendidos * DIAS_DE_COBERTURA) / DIAS_DE_VENDA;
+        let pedir = Math.ceil(necessario - estoque);
+        if (pedir < 0) {
+          pedir = 0;
+        }
         vaiAcabar.push({
           sku: item.sku,
           produto: item.produto,
           estoqueArmazem: estoque,
           mediaDiaria: Math.round(mediaDiaria * 10) / 10,
           diasRestantes: Math.round(dias * 10) / 10,
+          pedirPara14Dias: pedir,
         });
       }
     }
@@ -127,8 +139,9 @@ const campoArmazem = document.getElementById('csv-armazem');
 const campoVendas = document.getElementById('csv-vendas');
 const botaoComparar = document.getElementById('btn-comparar');
 const botaoExemplos = document.getElementById('btn-exemplos');
-const botaoApi = document.getElementById('btn-api');
+const botaoIA = document.getElementById('btn-ia');
 const areaResultado = document.getElementById('resultado');
+const areaExplicacao = document.getElementById('explicacao');
 const areaStatus = document.getElementById('status');
 
 let ultimoResultado = null;
@@ -175,7 +188,7 @@ function mostrarResultado(resultado) {
   );
   areaResultado.appendChild(
     criarTabela('Vai acabar em menos de 7 dias', resultado.vaiAcabar || [],
-      ['sku', 'produto', 'estoqueArmazem', 'mediaDiaria', 'diasRestantes'])
+      ['sku', 'produto', 'estoqueArmazem', 'mediaDiaria', 'diasRestantes', 'pedirPara14Dias'])
   );
 }
 
@@ -185,6 +198,7 @@ function comparar(textoSistema, textoArmazem, textoVendas) {
   );
 
   ultimoResultado = resultado;
+  areaExplicacao.textContent = '';
   mostrarResultado(resultado);
   mostrarStatus('Comparação feita.');
 }
@@ -215,16 +229,45 @@ botaoExemplos.addEventListener('click', async () => {
   }
 });
 
-botaoApi.addEventListener('click', async () => {
+// Envia só o resultado da comparação (não os CSVs) para o servidor, que chama a IA.
+// A chave da IA fica no servidor; o navegador nunca a vê.
+botaoIA.addEventListener('click', async () => {
+  if (!ultimoResultado) {
+    mostrarStatus('Faça a comparação primeiro.', true);
+    return;
+  }
+
+  areaExplicacao.textContent = '';
+  botaoIA.disabled = true;
+  mostrarStatus('Pedindo a explicação para a IA...');
+
   try {
     const r = await fetch('/api/analisar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ultimoResultado || {}),
+      body: JSON.stringify(ultimoResultado),
     });
-    const dados = await r.json();
-    mostrarStatus(`Resposta da API: ${JSON.stringify(dados)}`, !r.ok);
+
+    // Se o servidor cair, a resposta pode nem ser JSON.
+    let dados = null;
+    try {
+      dados = await r.json();
+    } catch {
+      dados = null;
+    }
+
+    if (!r.ok || !dados || !dados.texto) {
+      const motivo = dados && dados.erro ? dados.erro : `o servidor respondeu ${r.status}.`;
+      mostrarStatus(`Não foi possível gerar a explicação: ${motivo}`, true);
+      return;
+    }
+
+    // textContent (e não innerHTML): o texto da IA é exibido como texto, nunca como HTML.
+    areaExplicacao.textContent = dados.texto;
+    mostrarStatus(`Explicação gerada pela IA (modelo: ${dados.modelo}). Os números vêm da comparação abaixo.`);
   } catch (e) {
-    mostrarStatus(`Não consegui falar com a API: ${e.message}`, true);
+    mostrarStatus(`Não consegui falar com o servidor: ${e.message}`, true);
+  } finally {
+    botaoIA.disabled = false;
   }
 });

@@ -5,6 +5,7 @@
   "description": "Demo: compara estoque do sistema x armazém e aponta o que vai acabar (dados fictícios).",
   "type": "module",
   "scripts": {
+    "local": "node --env-file-if-exists=.env servidor-local.js",
     "dev": "vercel dev"
   }
 }

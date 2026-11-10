@@ -21,6 +21,9 @@
     th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e6eb; }
     section { overflow-x: auto; margin-top: 16px; }
     h2 { font-size: 1.05rem; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .explicacao { white-space: pre-wrap; background: #fff; padding: 16px; border-radius: 8px; line-height: 1.5; margin-top: 12px; }
+    .explicacao:empty { display: none; }
   </style>
 </head>
 <body>
@@ -43,10 +46,11 @@
     <div class="botoes">
       <button id="btn-comparar">Comparar</button>
       <button id="btn-exemplos" class="secundario">Usar arquivos de exemplo</button>
-      <button id="btn-api" class="secundario">Testar API</button>
+      <button id="btn-ia" class="secundario">Explicar com IA</button>
     </div>
 
     <p id="status" class="status"></p>
+    <div id="explicacao" class="explicacao"></div>
     <div id="resultado"></div>
   </main>
   <script src="app.js"></script>
